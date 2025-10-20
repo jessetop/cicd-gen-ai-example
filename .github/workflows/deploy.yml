@@ -9,7 +9,7 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: ai-chat-demo
-  EKS_CLUSTER_NAME: demo-cluster
+  EKS_CLUSTER_NAME: jat-class-cluster
 
 jobs:
   build-and-deploy:

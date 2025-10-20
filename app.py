@@ -6,6 +6,7 @@ import json
 app = Flask(__name__)
 
 # Hugging Face API configuration (free tier)
+# comment to commit
 HF_API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
 HF_TOKEN = os.getenv('HUGGING_FACE_TOKEN', '')
 
