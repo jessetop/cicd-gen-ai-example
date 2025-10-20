@@ -5,15 +5,35 @@ import json
 
 app = Flask(__name__)
 
-# Hugging Face API configuration (free tier)
-# comment to commit
-HF_API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
-HF_TOKEN = os.getenv('HUGGING_FACE_TOKEN', '')
+# Using a completely free API that doesn't require authentication
+API_URL = "https://api.freeapi.app/api/v1/public/quotes/quote/random"
 
-def query_huggingface(payload):
-    headers = {"Authorization": f"Bearer {HF_TOKEN}"} if HF_TOKEN else {}
-    response = requests.post(HF_API_URL, headers=headers, json=payload)
-    return response.json()
+def get_ai_response(question):
+    # Simple rule-based responses + random quote for demo
+    question_lower = question.lower()
+    
+    if "hello" in question_lower or "hi" in question_lower:
+        return "Hello! I'm your AI assistant. Ask me anything!"
+    elif "how are you" in question_lower:
+        return "I'm doing great! Thanks for asking. How can I help you today?"
+    elif "weather" in question_lower:
+        return "I don't have access to real-time weather data, but I hope it's nice where you are!"
+    elif "time" in question_lower:
+        return "I don't have access to real-time data, but you can check your system clock!"
+    else:
+        # Get a random inspirational quote as a fallback
+        try:
+            response = requests.get(API_URL, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data and 'content' in data['data']:
+                    quote = data['data']['content']
+                    author = data['data'].get('author', 'Unknown')
+                    return f"Here's some wisdom for you: \"{quote}\" - {author}"
+        except:
+            pass
+        
+        return f"That's an interesting question about '{question}'. I'm a simple demo bot, but I'd love to help you explore that topic further!"
 
 @app.route('/')
 def home():
@@ -28,17 +48,8 @@ def ask_question():
         if not question:
             return jsonify({'error': 'No question provided'}), 400
         
-        # Query Hugging Face API
-        payload = {"inputs": question}
-        result = query_huggingface(payload)
-        
-        # Handle different response formats
-        if isinstance(result, list) and len(result) > 0:
-            answer = result[0].get('generated_text', 'No response generated')
-        elif isinstance(result, dict):
-            answer = result.get('generated_text', result.get('error', 'Unknown error'))
-        else:
-            answer = "Unable to process the request"
+        # Get AI response
+        answer = get_ai_response(question)
         
         return jsonify({'answer': answer})
     
