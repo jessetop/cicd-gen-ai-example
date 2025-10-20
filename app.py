@@ -5,35 +5,38 @@ import json
 
 app = Flask(__name__)
 
-# Using a completely free API that doesn't require authentication
-API_URL = "https://api.freeapi.app/api/v1/public/quotes/quote/random"
+# Using Hugging Face Inference API without authentication (rate limited but free)
+API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
 
 def get_ai_response(question):
-    # Simple rule-based responses + random quote for demo
-    question_lower = question.lower()
-    
-    if "hello" in question_lower or "hi" in question_lower:
-        return "Hello! I'm your AI assistant. Ask me anything!"
-    elif "how are you" in question_lower:
-        return "I'm doing great! Thanks for asking. How can I help you today?"
-    elif "weather" in question_lower:
-        return "I don't have access to real-time weather data, but I hope it's nice where you are!"
-    elif "time" in question_lower:
-        return "I don't have access to real-time data, but you can check your system clock!"
-    else:
-        # Get a random inspirational quote as a fallback
-        try:
-            response = requests.get(API_URL, timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                if 'data' in data and 'content' in data['data']:
-                    quote = data['data']['content']
-                    author = data['data'].get('author', 'Unknown')
-                    return f"Here's some wisdom for you: \"{quote}\" - {author}"
-        except:
-            pass
+    try:
+        # Try Hugging Face API first
+        payload = {"inputs": question}
+        response = requests.post(API_URL, json=payload, timeout=10)
         
-        return f"That's an interesting question about '{question}'. I'm a simple demo bot, but I'd love to help you explore that topic further!"
+        if response.status_code == 200:
+            result = response.json()
+            if isinstance(result, list) and len(result) > 0:
+                generated_text = result[0].get('generated_text', '')
+                if generated_text and generated_text != question:
+                    return generated_text.replace(question, '').strip()
+        
+        # Fallback to simple responses if API fails
+        question_lower = question.lower()
+        
+        if "hello" in question_lower or "hi" in question_lower:
+            return "Hello! I'm your AI assistant. Ask me anything!"
+        elif "how are you" in question_lower:
+            return "I'm doing great! Thanks for asking. How can I help you today?"
+        elif "what" in question_lower and "name" in question_lower:
+            return "I'm an AI assistant created for this demo. You can call me Demo Bot!"
+        elif "help" in question_lower:
+            return "I'm here to help! Ask me questions about anything - technology, general knowledge, or just chat!"
+        else:
+            return f"That's an interesting question about '{question}'. I'm still learning, but I'd be happy to discuss this topic with you!"
+            
+    except Exception as e:
+        return f"I'm having trouble processing that right now, but I heard you ask about '{question}'. Could you try rephrasing it?"
 
 @app.route('/')
 def home():
